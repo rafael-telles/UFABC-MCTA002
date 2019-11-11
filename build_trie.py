@@ -1,47 +1,86 @@
 from collections import defaultdict
+from functools import lru_cache
 import struct
+import time
+
+LETTERS = b'\0abcdefghijklmnopqrstuvwxyz'
 
 class Trie(object):
-    def __init__(self):
-        self.d: defaultdict = defaultdict(Trie)
-        self.values: set(bytes) = set()
+    def __init__(self, file_):
+        self.file_ = file_
 
-    def add(self, key, value):
+    @lru_cache(102400)
+    def find_block(self, key):
+        if len(key) == 0:
+            return 0
+
+        parent_block = self.find_block(key[:-1])
+        char_index = LETTERS.index(key[-1])
+        
+        self.file_.seek(parent_block + 4 * char_index)
+
+        offset_pos = self.file_.tell()
+        offset = struct.unpack('i', self.file_.read(4))[0]
+        if offset == -1:
+            offset = self._create_block()
+            self.file_.seek(offset_pos)
+            self.file_.write(struct.pack('i', offset))
+
+        return offset
+
+    def add(self, key, values):
         if not isinstance(key, bytes):
             key = bytes(key, 'ascii')
-        if not isinstance(value, bytes):
-            value = bytes(value, 'ascii')
+
+        pointer = self.find_block(key)
+
+        while True:
+            self.file_.seek(pointer)
+            next_pointer = struct.unpack('i', self.file_.read(4))[0]
+
+            if next_pointer != -1:
+                pointer = next_pointer
+            else:
+                break
+
+        for value in values:
+            if not isinstance(value, bytes):
+                value = bytes(value, 'ascii')
+
+            value_offset = self._create_value(value)
+            self.file_.seek(pointer)
+            self.file_.write(struct.pack('i', value_offset))
+
+            pointer = value_offset
+
+    def _create_block(self):
+        pos = self.file_.tell()
         
-        first_char = key[0] if len(key) > 0 else 0
+        self.file_.seek(0, 2)
+        block_addr = self.file_.tell()
+        
+        size_of_block = (len(LETTERS) * 4)
+        self.file_.write(b'\xff' * size_of_block)
 
-        if first_char == 0:
-            self.d[first_char].values.add(value)
-        else:
-            self.d[first_char].add(key[1:], value)
+        return block_addr
 
-    def serialize(self):
-        result = bytearray()
-        if self.values:
-            result += struct.pack('i', len(self.values))
-            for value in self.values:
-                result += struct.pack(f'i{"b"*len(value)}', len(value), *value)
-        else:
-            keys = sorted(self.d.keys())
-            sub_tries = [self.d[key] for key in keys]
-            
-            serialized_sub_tries = [sub_trie.serialize() for sub_trie in sub_tries]
-            serialized_sub_tries_offsets = [0 for _ in sub_tries]
-            for i in range(1, len(sub_tries)):
-                serialized_sub_tries_offsets[i] = serialized_sub_tries_offsets[i - 1] + len(serialized_sub_tries[i - 1])
+    def _create_value(self, value):
+        pos = self.file_.tell()
+        
+        self.file_.seek(0, 2)
 
-            result += struct.pack('i', len(keys))
-            result += struct.pack(f'{"b"*len(keys)}', *keys)
-            result += struct.pack(f'{"i"*len(keys)}', *serialized_sub_tries_offsets)
-            for s in serialized_sub_tries:
-                result += s
-        return result
+        block_addr = self.file_.tell()
+        self.file_.write(struct.pack('ii', -1, len(value)))
+        self.file_.write(value)
+
+        return block_addr
+
+
 
 def generate_variants(word):
+#    return [word]
+
+    # Source: https://norvig.com/spell-correct.html
     "All edits that are one edit away from `word`."
     letters    = 'abcdefghijklmnopqrstuvwxyz'
     splits     = [(word[:i], word[i:])    for i in range(len(word) + 1)]
@@ -53,16 +92,38 @@ def generate_variants(word):
 
 
 if __name__ == '__main__':
-    trie = Trie()
+    trie_file = open("trie.data", 'w+b')
+    trie = Trie(trie_file)
+    trie._create_block()
 
     print("Adding words...")
     with open('words2.txt', 'r') as words_file:
+        i = 0
+        j = 0
+
+        words = defaultdict(set)
+        def flush():
+            flush_words = len(words)
+            print(f'Flushing {flush_words} keys...')
+            start_t = time.time()
+
+            for key in sorted(words.keys()):
+                trie.add(key, words[key])
+            words.clear()
+            
+            took = time.time() - start_t
+            print(f'took {took} seconds. ({1000 * took / flush_words} ms per key.')
+
+            print(f'Total: {j} keys, {i} values')
         for word in words_file:
             word = word.strip()
+            
+            i += 1
             for variant in generate_variants(word):
-                trie.add(variant, word)
+                words[variant].add(word)
+                j += 1
 
-    print("Serializing...")
-    data = trie.serialize()
-    with open('trie.data', 'wb') as f:
-        f.write(data)
+            if len(words) >= 50000:
+                flush()
+                
+        flush()

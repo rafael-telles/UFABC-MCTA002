@@ -1,31 +1,38 @@
 import struct
 import sys
 
-def search(reader, key):
-    if len(key) == 0:
-        values_quantity = struct.unpack('i', reader.read(4))[0]
-        values = []
-        for _ in range(values_quantity):
-            value_length = struct.unpack('i', reader.read(4))[0]
-            value = reader.read(value_length)
-            values.append(value)
-        return values
-    else:
-        first_char = key[0]
-        quantity_of_keys = struct.unpack('i', reader.read(4))[0]
-        keys = [struct.unpack('b', reader.read(1))[0] for _ in range(quantity_of_keys)]
-        offsets = [struct.unpack('i', reader.read(4))[0] for _ in range(quantity_of_keys)]
+LETTERS = b'\0abcdefghijklmnopqrstuvwxyz'
 
-        try:
-            index = keys.index(first_char)
-            offset = offsets[index]
-            reader.seek(offset, 1)
-            return search(reader, key[1:])
-        except:
+def search(reader, key):
+    key += b'\0'
+    i = 0
+    while i < len(key):
+        char_index = LETTERS.index(key[i])
+        reader.seek(char_index * 4, 1)
+
+        offset = struct.unpack('i', reader.read(4))[0]
+        if offset == -1:
             return None
+        
+        reader.seek(offset)
+        i += 1
+
+    values = []
+    while offset != -1:
+        reader.seek(offset)
+        next_offset, value_length = struct.unpack('ii', reader.read(8))
+        value = reader.read(value_length)
+        values.append(value)
+
+        offset = next_offset
+    return values
 
 
 if __name__ == '__main__':
     reader = open('trie.data', 'rb')
     word = sys.argv[1]
-    print(search(reader, bytes(word, 'ascii') + b'\0'))
+    key = bytes(word, 'ascii')
+
+    value = search(reader, key)
+
+    print(value)
