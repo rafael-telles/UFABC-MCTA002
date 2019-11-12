@@ -69,6 +69,8 @@ def search(buffer, word):
     edits(buffer, 0, b'', word, results, 1)
 
     items = sorted(results.items(), key=lambda item: item[1], reverse=True)
+    items_sum = sum([item[1] for item in items])
+    items = [[item[0], item[1] / items_sum] for item in items]
     return items
 
 if __name__ == '__main__':
