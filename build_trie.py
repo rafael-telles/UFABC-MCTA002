@@ -1,7 +1,8 @@
-from collections import defaultdict
+from collections import defaultdict, Counter
 from functools import lru_cache
 import struct
 import time
+import nltk
 
 LETTERS = b'\0abcdefghijklmnopqrstuvwxyz'
 
@@ -95,13 +96,15 @@ if __name__ == '__main__':
     trie._create_block()
 
     print("Adding words...")
-    with open('words.txt', 'r') as words_file:
-        i = 0
 
-        for word in words_file:
-            word = word.strip()
-            trie.add(word, i)            
-            i += 1
+    words = nltk.corpus.brown.words()
+    words = [bytes(word.lower(), 'ascii') for word in words]
+    valid_words = filter(lambda word: all([w in LETTERS for w in word]), words)
+    
+    c = Counter(valid_words)
+    for word, count in c.items():
+        word = word.strip()
+        trie.add(word, count)
 
     print("Write to file...")
     with open("trie.data", 'w+b') as trie_file:

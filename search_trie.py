@@ -66,9 +66,10 @@ def search(buffer, word):
         word = bytes(word, 'ascii')
     
     results = {}
-    edits(buffer, 0, b'', word, results, 2)
+    edits(buffer, 0, b'', word, results, 1)
 
-    return results
+    items = sorted(results.items(), key=lambda item: item[1], reverse=True)
+    return items
 
 if __name__ == '__main__':
     word = sys.argv[1]
