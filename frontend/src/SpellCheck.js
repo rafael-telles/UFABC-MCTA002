@@ -233,7 +233,10 @@ export default class SpellCheck extends Extension {
             return DecorationSet.empty;
           },
           apply: (tr, old) => {
-            return this.createDeco(tr.doc);
+            if (tr.docChanged) {
+              return old.map(tr.mapping, tr.doc)
+            }
+            return this.createDeco(tr.doc)
           }
         },
         props: {
