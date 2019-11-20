@@ -1,3 +1,2 @@
-nltk
 flask
 flask-cors

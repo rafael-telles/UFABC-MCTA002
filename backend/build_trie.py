@@ -2,13 +2,12 @@ from collections import defaultdict, Counter
 from functools import lru_cache
 import struct
 import time
-import nltk
 
 from config import LETTERS
 
 class Trie(object):
     def __init__(self):
-        self.buffer = bytearray(1024 * 1024 * 1024)
+        self.buffer = bytearray(256 * 1024 * 1024)
         self.position = 0
         self.length = 0
     
@@ -98,6 +97,7 @@ if __name__ == '__main__':
     print("Adding words...")
 
     words = open('words.txt').readlines()
+    # import nltk
     # words = nltk.corpus.brown.words()
     
     words = [word.strip() for word in words]

@@ -1,0 +1,1 @@
+web: python3 build_trie.py; python3 app.py

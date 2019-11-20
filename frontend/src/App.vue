@@ -52,7 +52,7 @@ export default {
     MyEditorMenuBar
   },
   data() {
-    const apiBase = 'http://localhost:5000/api'
+    const apiBase = 'https://mcta002-backend.herokuapp.com/api'
     const spellCheck = new SpellCheck({ apiBase });
     return {
       apiBase,

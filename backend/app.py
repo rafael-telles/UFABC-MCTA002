@@ -3,6 +3,7 @@ from flask_cors import CORS
 
 from search_trie import Trie
 import mmap
+import os
 
 
 with open('trie.data', 'r+') as trie_file:
@@ -36,4 +37,5 @@ def return_words():
 #    return response
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=True, host='0.0.0.0', port=port)
