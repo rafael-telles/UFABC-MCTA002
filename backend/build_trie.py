@@ -4,7 +4,7 @@ import struct
 import time
 import nltk
 
-LETTERS = b'\0abcdefghijklmnopqrstuvwxyz'
+from config import LETTERS
 
 class Trie(object):
     def __init__(self):
