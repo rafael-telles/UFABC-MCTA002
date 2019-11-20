@@ -97,7 +97,10 @@ if __name__ == '__main__':
 
     print("Adding words...")
 
-    words = nltk.corpus.brown.words()
+    words = open('words.txt').readlines()
+    # words = nltk.corpus.brown.words()
+    
+    words = [word.strip() for word in words]
     words = [bytes(word.lower(), 'ascii') for word in words]
     valid_words = filter(lambda word: all([w in LETTERS for w in word]), words)
     

@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /* eslint-disable no-unused-vars */
 import { Extension, Plugin } from "tiptap";
 import { Decoration, DecorationSet } from "prosemirror-view";
@@ -59,7 +60,7 @@ export default class SpellCheck extends Extension {
   }
 
   async fetchSuggestions(words) {
-    const res = Axios.post(`${this.apiBase}/suggestions`, { words });
+    const res = await Axios.post(`${this.apiBase}/suggestions`, { words });
     return res.data;
   }
 

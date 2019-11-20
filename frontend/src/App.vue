@@ -52,7 +52,7 @@ export default {
     MyEditorMenuBar
   },
   data() {
-    const apiBase = 'http://localhost:3000'
+    const apiBase = 'http://localhost:5000/api'
     const spellCheck = new SpellCheck({ apiBase });
     return {
       apiBase,

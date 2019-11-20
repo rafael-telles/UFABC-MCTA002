@@ -9,12 +9,14 @@ with open('trie.data', 'r+') as trie_file:
     buffer = mmap.mmap(trie_file.fileno(), 0)
     trie = Trie(buffer)
 
+
 def return_closest_words(words):
     suggestions = {}
     for word in words:
         results = trie.search(word)
-        results = {value[0].decode('utf-8'):value[1] for value in results}
-        suggestions[word] = results
+        results = { value[0].decode('utf-8'):value[1] for value in results }
+        if word not in results:
+            suggestions[word] = results
         
     return suggestions
 
